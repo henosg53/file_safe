@@ -1,6 +1,7 @@
 from cryptography.fernet import Fernet
 import json
 import os
+from enc import Enc
 
 class XCrypt:
 
@@ -42,18 +43,22 @@ class XCrypt:
 
         new_file_path = os.path.join(self.file_safe_dir, f"encrypted_{file_name}")
 
-
+        
         with open(new_file_path, 'wb') as file:
             file.write(encrypted_data)
 
+        # encrypted_data = Enc().file_to_blob(file_path=new_file_path,output_path=new_file_path+'.blob')
+
         # remove original file
         os.remove(file_path)
+
         
         # store encryption key 
         self.store_key(filename=new_file_path,key=key)
 
     # decrypt file
     def decrypt_file(self,file_path, key=None):
+        # Enc().blob_to_file(file_path=file_path,output_path=file_path[:5])
         with open(file_path, 'rb') as file:
             encrypted_data = file.read()
 

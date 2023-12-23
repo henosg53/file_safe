@@ -1,5 +1,5 @@
-from file_safe import CryptUI
+from xcrypt_ui import XCryptUI
 
 
 if __name__ == '__main__':
-    app = CryptUI()
+    app = XCryptUI()

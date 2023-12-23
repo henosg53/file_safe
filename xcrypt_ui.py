@@ -5,7 +5,7 @@ import tkinter as tk
 from tkinter import messagebox,filedialog,Tk,dialog
 
 
-class CryptUI:
+class XCryptUI:
     def __init__(self):
         # password validation
         self.validate_user()
