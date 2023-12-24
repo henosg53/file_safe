@@ -1,53 +1,90 @@
 import json
 import os
-from xcrypt import XCrypt 
+from xcrypt import XCrypt
 import tkinter as tk
-from tkinter import messagebox,filedialog,Tk,dialog
+from tkinter import messagebox, filedialog, Tk, dialog
 
 
 class XCryptUI:
     def __init__(self):
-        # password validation
-        self.validate_user()
+        # # password validation
+        # self.validate_user()
 
         self.crypt = XCrypt()
         self.root = tk.Tk()
         self.root.title("Crypt")
         self.screen_height = 500
         self.screen_width = 700
-        self.root.geometry(f"{self.screen_width}x{self.screen_height}")
 
-        # self.encrypted_files_path = '.'
-        self.encrypted_files_path = os.path.join(os.getcwd(),'data/file_secure/encrypted_files')
-        self.key_storage_path = os.path.join(os.getcwd(),'data/file_secure/key_storage.json')
+        self.root.configure(bg="darkgray", padx=5, pady=5, height=self.screen_height, width=self.screen_width)
+
+        # xcrypt conf
+        self.encrypted_files_path = os.path.join(os.getcwd(), 'data/file_secure/encrypted_files')
+        self.key_storage_path = os.path.join(os.getcwd(), 'data/file_secure/key_storage.json')
         self.create_secure_directory(self.encrypted_files_path)
+        self.encrypted_files_path = os.path.join(os.getcwd(), 'data/file_secure/encrypted_files')
 
-        self.text_entry = tk.Label(self.root, text='Crypt File Safe', width=50)
-        self.text_entry.pack(padx=10, pady=10)
+        # declare_components
+        (self.title,
+         self.files_frame,
+         self.file_listbox,
+         self.encrypt_button,
+         self.decrypt_button,
+         self.delete_button) = None, None, None, None, None, None
 
-        # self.encrypted_files_path = '.'
-        self.encrypted_files_path = os.path.join(os.getcwd(),'data/file_secure/encrypted_files')
-
-        self.encrypt_button = tk.Button(self.root, text="Import File", command=self.encrypt)
-        self.encrypt_button.pack(pady=5)
-
-        self.file_listbox = tk.Listbox(self.root, width=50)
-        self.file_listbox.pack(padx=10, pady=10)
-
-        self.populate_file_listbox()
-        
-        
-        self.decrypt_button = tk.Button(self.root, text="Decrypt File", command=self.decrypt)
-        self.decrypt_button.pack(pady=5)
-                
-        self.delete_button = tk.Button(self.root, text="Delete From Safe", command=self.delete_file)
-        self.delete_button.pack(pady=5)
-        
-        
+        # create components
+        self.create_components()
 
         self.root.mainloop()
 
-    def validate_user(self):
+    def create_components(self):
+        self.title = tk.Label(self.root, text='XCrypt File Safe',
+                              font="forte 20 bold",
+                              fg="gray",
+                              width=50)
+        self.title.pack(padx=10, pady=10)
+
+        self.encrypt_button = tk.Button(self.root, text="Import File", bg="blue", fg="white",
+                                        activebackground="darkblue",
+                                        activeforeground="white",
+                                        command=self.encrypt)
+        self.encrypt_button.pack(pady=5)
+
+        self.files_frame = tk.Frame(self.root)
+        self.files_frame.pack()
+
+        scrollbar = tk.Scrollbar(self.files_frame)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.file_listbox = tk.Listbox(self.files_frame,
+                                       bg="gray",
+                                       font="forte",
+                                       selectbackground="black",
+                                       selectforeground="white",
+                                       yscrollcommand=scrollbar.set,
+                                       width=50,
+                                       height=20)
+        self.file_listbox.pack(side=tk.LEFT, fill=tk.BOTH)
+
+        scrollbar.config(command=self.file_listbox.yview)
+
+        self.populate_file_listbox()
+
+        self.decrypt_button = tk.Button(self.root, text="Decrypt File",
+                                        activebackground="green",
+                                        activeforeground="white",
+                                        # relief="grooved",
+                                        command=self.decrypt)
+        self.decrypt_button.pack(pady=5)
+
+        self.delete_button = tk.Button(self.root, text="Delete From Safe",
+                                       activebackground="red",
+                                       activeforeground="white",
+                                       command=self.delete_file)
+        self.delete_button.pack(pady=5)
+
+    @staticmethod
+    def validate_user():
         passwd = input("please enter password: ")
         if passwd == "soul":
             return
@@ -57,18 +94,16 @@ class XCryptUI:
     def create_secure_directory(self, directory_path):
         if not os.path.exists(directory_path):
             os.makedirs(directory_path)
-            
             key = {}
-
             with open(self.key_storage_path, 'w') as file:
                 json.dump(key, file)
-
             print("path and key storage file created")
         else:
             print("secure path exists! ")
 
     # file dialog box
-    def select_file(self):
+    @staticmethod
+    def select_file():
         root = Tk()
         root.withdraw()
         file_path = filedialog.askopenfilename()
@@ -82,7 +117,7 @@ class XCryptUI:
             if os.path.isfile(file_path):
                 self.file_listbox.insert(tk.END, filename)
 
-    # ecrypt file 
+    # encrypt file
     def encrypt(self):
         file = self.select_file()
         if file:
@@ -90,9 +125,9 @@ class XCryptUI:
             messagebox.showinfo("Encryption Result", f"Encrypted file: {encrypted_file}")
         else:
             messagebox.showwarning("Empty Input", "Please enter file to encrypt.")
-        
+
         self.populate_file_listbox()
-    
+
     # decrypt selected encrypted file
     def decrypt(self):
         selected_indices = self.file_listbox.curselection()
@@ -102,14 +137,14 @@ class XCryptUI:
             file_path = os.path.join(self.encrypted_files_path, selected_file)
             print(selected_file)
             decrypted_file_path = self.crypt.decrypt_file(file_path)
-            messagebox.showinfo("Decryption Result", f"File decrypted successfully. Decrypted file saved as: {decrypted_file_path}")
-            
+            messagebox.showinfo("Decryption Result",
+                                f"File decrypted successfully. Decrypted file saved as: {decrypted_file_path}")
+
             self.file_listbox.delete(selected_index)  # Remove the decrypted file from the listbox
             self.populate_file_listbox()
         else:
             messagebox.showwarning("No File Selected", "Please select a file to decrypt.")
-        
-        
+
     # remove encrypted file from file safe
     def delete_file(self):
         selected_indices = self.file_listbox.curselection()
@@ -117,14 +152,13 @@ class XCryptUI:
             selected_index = selected_indices[0]
             selected_file = self.file_listbox.get(selected_index)
             file_path = os.path.join(self.encrypted_files_path, selected_file)
-            
+
             print(file_path)
             os.remove(file_path)
             messagebox.showinfo("File Deleted", f"The file '{selected_file}' has been deleted.")
-            
+
             self.file_listbox.delete(selected_index)  # Remove the deleted file from the listbox
         else:
             messagebox.showwarning("No File Selected", "Please select a file to delete.")
-        
-        self.populate_file_listbox()
 
+        self.populate_file_listbox()
