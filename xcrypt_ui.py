@@ -2,23 +2,56 @@ import json
 import os
 from xcrypt import XCrypt
 import tkinter as tk
-from tkinter import messagebox, filedialog, Tk, dialog
+from tkinter import messagebox, filedialog, Tk, simpledialog
+
+
+class XAuth:
+    def __init__(self):
+        self.root = tk.Tk()
+        self.root.title("Login")
+        self.title_label = tk.Label(self.root, text="Login")
+        self.title_label.pack()
+        self.passwd_label = tk.Label(self.root, text="password")
+        self.passwd_label.pack()
+        self.passwd = tk.StringVar()
+        self.passwd_entry = tk.Entry(self.root, textvariable=self.passwd, width=20)
+        self.passwd_entry.pack()
+
+        self.login_btn = tk.Button(self.root, text="Login", bg="blue", fg="white",
+                                   activebackground="darkblue",
+                                   activeforeground="white",
+                                   command=self.auth_pass)
+        self.login_btn.pack()
+
+        self.root.mainloop()
+
+    def auth_pass(self):
+        if self.passwd.get() == "soul":
+
+            self.root.withdraw()
+            XCryptUI()
+        else:
+            exit()
 
 
 class XCryptUI:
     def __init__(self):
         # # password validation
-        # self.validate_user()
 
-        self.crypt = XCrypt()
+        self.validate_user()
+        # auth = XAuth()
+
         self.root = tk.Tk()
-        self.root.title("Crypt")
+        self.root.title("XCrypt")
         self.screen_height = 500
-        self.screen_width = 700
+        self.screen_width = 500
 
-        self.root.configure(bg="darkgray", padx=5, pady=5, height=self.screen_height, width=self.screen_width)
+        self.root.configure(bg="darkgray",
+                            padx=5, pady=5,
+                            height=self.screen_height, width=self.screen_width)
 
         # xcrypt conf
+        self.crypt = XCrypt()
         self.encrypted_files_path = os.path.join(os.getcwd(), 'data/file_secure/encrypted_files')
         self.key_storage_path = os.path.join(os.getcwd(), 'data/file_secure/key_storage.json')
         self.create_secure_directory(self.encrypted_files_path)
@@ -28,9 +61,11 @@ class XCryptUI:
         (self.title,
          self.files_frame,
          self.file_listbox,
+         self.files_scrollbar,
          self.encrypt_button,
+         self.buttons_frame,
          self.decrypt_button,
-         self.delete_button) = None, None, None, None, None, None
+         self.delete_button) = None, None, None, None, None, None, None, None
 
         # create components
         self.create_components()
@@ -53,41 +88,46 @@ class XCryptUI:
         self.files_frame = tk.Frame(self.root)
         self.files_frame.pack()
 
-        scrollbar = tk.Scrollbar(self.files_frame)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.files_scrollbar = tk.Scrollbar(self.files_frame)
+        self.files_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
         self.file_listbox = tk.Listbox(self.files_frame,
                                        bg="gray",
                                        font="forte",
                                        selectbackground="black",
                                        selectforeground="white",
-                                       yscrollcommand=scrollbar.set,
+                                       yscrollcommand=self.files_scrollbar.set,
+                                       # cursor="circle",
                                        width=50,
-                                       height=20)
+                                       height=10)
         self.file_listbox.pack(side=tk.LEFT, fill=tk.BOTH)
 
-        scrollbar.config(command=self.file_listbox.yview)
+        self.files_scrollbar.config(command=self.file_listbox.yview)
 
         self.populate_file_listbox()
 
-        self.decrypt_button = tk.Button(self.root, text="Decrypt File",
-                                        activebackground="green",
+        self.buttons_frame = tk.Frame(self.root, bg="darkgray")
+        self.buttons_frame.pack(pady=5)
+
+        self.decrypt_button = tk.Button(self.buttons_frame, text="Decrypt File", bg="green", fg="white",
+                                        activebackground="darkgreen",
                                         activeforeground="white",
                                         # relief="grooved",
                                         command=self.decrypt)
-        self.decrypt_button.pack(pady=5)
+        self.decrypt_button.pack(padx=(5, 5), side=tk.LEFT)
 
-        self.delete_button = tk.Button(self.root, text="Delete From Safe",
-                                       activebackground="red",
+        self.delete_button = tk.Button(self.buttons_frame, text="Delete From Safe", bg="red", fg="white",
+                                       activebackground="darkred",
                                        activeforeground="white",
                                        command=self.delete_file)
-        self.delete_button.pack(pady=5)
+        self.delete_button.pack(padx=(5, 5), side=tk.RIGHT, fill=tk.BOTH)
 
     @staticmethod
     def validate_user():
-        passwd = input("please enter password: ")
+        passwd = simpledialog.askstring(title="password", prompt="password", show=None)
+
         if passwd == "soul":
-            return
+            return True
         else:
             exit()
 
@@ -121,8 +161,8 @@ class XCryptUI:
     def encrypt(self):
         file = self.select_file()
         if file:
-            encrypted_file = self.crypt.encrypt_file(file)
-            messagebox.showinfo("Encryption Result", f"Encrypted file: {encrypted_file}")
+            self.crypt.encrypt_file(file)
+            messagebox.showinfo("Encryption Result", f"Encrypted file: {file}")
         else:
             messagebox.showwarning("Empty Input", "Please enter file to encrypt.")
 

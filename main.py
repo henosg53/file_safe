@@ -1,6 +1,7 @@
 def crypt_ui():
-    from xcrypt_ui import XCryptUI
+    from xcrypt_ui import XCryptUI,XAuth
     app = XCryptUI()
+    # XAuth()
 
 
 def ui_training():
