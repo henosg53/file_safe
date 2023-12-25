@@ -194,7 +194,8 @@ class XCryptUI:
             file_path = os.path.join(self.encrypted_files_path, selected_file)
 
             print(file_path)
-            os.remove(file_path)
+            # os.remove(file_path)
+            self.crypt.remove_file(file_path)
             messagebox.showinfo("File Deleted", f"The file '{selected_file}' has been deleted.")
 
             self.file_listbox.delete(selected_index)  # Remove the deleted file from the listbox
