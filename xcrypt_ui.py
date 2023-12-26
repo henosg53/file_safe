@@ -3,10 +3,68 @@ import os
 from xcrypt import XCrypt
 import tkinter as tk
 from tkinter import messagebox, filedialog, Tk, simpledialog
+import configparser
+
+
+class XConfig:
+    def __init__(self):
+        self.root = tk.Tk()
+        self.root.title("Configuration")
+        self.title_label = tk.Label(self.root, text="New User")
+        self.title_label.pack()
+
+        # self.first_name_label = tk.Label(self.root, text="Firstname: ")
+        # self.first_name_label.pack()
+        # self.first_name = tk.StringVar()
+        # self.first_name_entry = tk.Entry(self.root, textvariable=self.first_name)
+        # self.first_name_entry.pack()
+
+        self.user_name_label = tk.Label(self.root, text="Username: ")
+        self.user_name_label.pack()
+        self.user_name = tk.StringVar()
+        self.user_name_entry = tk.Entry(self.root, textvariable=self.user_name)
+        self.user_name_entry.pack()
+
+        self.passwd_label = tk.Label(self.root, text="Password: ")
+        self.passwd_label.pack()
+        self.passwd = tk.StringVar()
+        self.passwd_entry = tk.Entry(self.root, textvariable=self.passwd, show='*')
+        self.passwd_entry.pack()
+
+        self.submit_btn = tk.Button(self.root, text="submit", command=self.submit_form)
+        self.submit_btn.pack()
+
+        self.root.mainloop()
+
+    def submit_form(self):
+        print(f"Name: {self.user_name.get()}")
+        print(f"Password: {self.passwd.get()}")
+        config = configparser.ConfigParser()
+        config["Profile"] = {
+            'username': self.user_name.get(),
+            'password': self.passwd.get()
+
+        }
+        data_dir = "data"
+        os.makedirs(data_dir, exist_ok=True)
+        config_file_path = os.path.join(data_dir, "config.ini")
+
+        with open(config_file_path, "w") as config_file:
+            config.write(config_file)
+
+        messagebox.showinfo("Success", "Configuration saved!")
+
+        self.root.withdraw()
+        XAuth()
 
 
 class XAuth:
     def __init__(self):
+        self.data_dir = 'data'
+        self.config_file_path = os.path.join(self.data_dir, 'config.ini')
+        self.check_config()
+        self.stored_password = "soul"
+
         self.root = tk.Tk()
         self.root.title("Login")
         self.title_label = tk.Label(self.root, text="Login")
@@ -14,7 +72,7 @@ class XAuth:
         self.passwd_label = tk.Label(self.root, text="password")
         self.passwd_label.pack()
         self.passwd = tk.StringVar()
-        self.passwd_entry = tk.Entry(self.root, textvariable=self.passwd, width=20)
+        self.passwd_entry = tk.Entry(self.root, textvariable=self.passwd, show="*", width=20)
         self.passwd_entry.pack()
 
         self.login_btn = tk.Button(self.root, text="Login", bg="blue", fg="white",
@@ -25,8 +83,15 @@ class XAuth:
 
         self.root.mainloop()
 
+    def check_config(self):
+        if not os.path.exists(self.config_file_path):
+            XConfig()
+
+        else:
+            pass
+
     def auth_pass(self):
-        if self.passwd.get() == "soul":
+        if self.passwd.get() == self.stored_password:
 
             self.root.withdraw()
             XCryptUI()
@@ -38,7 +103,7 @@ class XCryptUI:
     def __init__(self):
         # # password validation
 
-        self.validate_user()
+        # self.validate_user()
         # auth = XAuth()
 
         self.root = tk.Tk()
@@ -194,7 +259,6 @@ class XCryptUI:
             file_path = os.path.join(self.encrypted_files_path, selected_file)
 
             print(file_path)
-            # os.remove(file_path)
             self.crypt.remove_file(file_path)
             messagebox.showinfo("File Deleted", f"The file '{selected_file}' has been deleted.")
 

@@ -132,9 +132,14 @@ class XCrypt:
                 try:
                     self.key_storage = json.load(file)
                     key_str = self.key_storage.get(filename)
-                    # print(key_str)
+
                     if key_str is not None:
-                        # Todo here...
+                        print(f"key string: {key_str} deleted")
+                        self.key_storage.pop(filename, None)
+                        with open(self.key_storage_file, 'w') as write_file:
+                            json.dump(self.key_storage, write_file)
+
+                        print(f"key storage: {self.key_storage} updated!")
                         # remove the key_str here...
                         key = key_str.encode("utf-8")
                         return key
@@ -147,8 +152,14 @@ class XCrypt:
 
     def remove_file(self, filename):
         os.remove(filename)
-        # # remove key from json
-        # self.remove_key(filename)
+        # modify the file path
+        relative_path = os.path.relpath(filename, start='file_safe')
+        if relative_path.startswith('..') or relative_path.startswith('home'):
+            filename = relative_path[3:]
+
+        print(f"file path: {filename}")
+        # remove key from json file
+        self.remove_key(filename)
 
     @staticmethod
     def blob(data):
