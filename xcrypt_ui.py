@@ -4,6 +4,13 @@ from xcrypt import XCrypt
 import tkinter as tk
 from tkinter import messagebox, filedialog, Tk, simpledialog
 import configparser
+import bcrypt
+
+
+def encrypt_password(password):
+    salt = bcrypt.gensalt()
+    hashed_password = bcrypt.hashpw(password.encode(), salt)
+    return hashed_password.decode()
 
 
 class XConfig:
@@ -34,69 +41,108 @@ class XConfig:
         self.submit_btn = tk.Button(self.root, text="submit", command=self.submit_form)
         self.submit_btn.pack()
 
+        self.root.protocol("WM_DELETE_WINDOW", self.exit)
         self.root.mainloop()
+
+    @staticmethod
+    def is_field_empty(field):
+        if field is None or field == "":
+            return True
+        return False
 
     def submit_form(self):
         print(f"Name: {self.user_name.get()}")
         print(f"Password: {self.passwd.get()}")
-        config = configparser.ConfigParser()
-        config["Profile"] = {
-            'username': self.user_name.get(),
-            'password': self.passwd.get()
 
-        }
-        data_dir = "data"
-        os.makedirs(data_dir, exist_ok=True)
-        config_file_path = os.path.join(data_dir, "config.ini")
+        if self.is_field_empty(self.user_name.get()):
+            messagebox.showerror(title="Error", message="Refill fields!")
+            return
 
-        with open(config_file_path, "w") as config_file:
-            config.write(config_file)
+        elif self.is_field_empty(self.passwd.get()):
+            messagebox.showerror(title="Error", message="Refill fields!")
+            return
 
-        messagebox.showinfo("Success", "Configuration saved!")
+        else:
+            config = configparser.ConfigParser()
+            config["Profile"] = {
+                'username': self.user_name.get(),
+                'password': encrypt_password(self.passwd.get())
+            }
+            data_dir = "data"
+            os.makedirs(data_dir, exist_ok=True)
+            config_file_path = os.path.join(data_dir, "config.ini")
 
-        self.root.withdraw()
-        XAuth()
+            with open(config_file_path, "w") as config_file:
+                config.write(config_file)
 
+            messagebox.showinfo("Success", "Configuration saved!")
+
+            self.root.withdraw()
+            XAuth()
+
+    def exit(self):
+        self.root.destroy()
 
 class XAuth:
     def __init__(self):
         self.data_dir = 'data'
         self.config_file_path = os.path.join(self.data_dir, 'config.ini')
         self.check_config()
-        self.stored_password = "soul"
+
+        self.stored_password = self.fetch_config(section="Profile", key="password")
+        self.stored_username = self.fetch_config(section="Profile", key="username")
+
+        # print(f"username: {self.stored_username}, password: {self.stored_password}")
 
         self.root = tk.Tk()
-        self.root.title("Login")
-        self.title_label = tk.Label(self.root, text="Login")
-        self.title_label.pack()
-        self.passwd_label = tk.Label(self.root, text="password")
+        self.root.title("XCrypt")
+        self.root.geometry("200x200")
+
+        self.welcome_label = tk.Label(self.root, text=f"Welcome {self.stored_username}",
+                                      font="forte 15 bold italic")
+        self.welcome_label.pack(pady=10)
+        self.passwd_label = tk.Label(self.root, text="Enter password", font="forte 10 bold")
         self.passwd_label.pack()
         self.passwd = tk.StringVar()
         self.passwd_entry = tk.Entry(self.root, textvariable=self.passwd, show="*", width=20)
-        self.passwd_entry.pack()
+        self.passwd_entry.pack(pady=5)
 
         self.login_btn = tk.Button(self.root, text="Login", bg="blue", fg="white",
                                    activebackground="darkblue",
                                    activeforeground="white",
                                    command=self.auth_pass)
-        self.login_btn.pack()
+        self.login_btn.pack(pady=5)
 
+        self.root.protocol("WM_DELETE_WINDOW", self.exit)
         self.root.mainloop()
+
+    def exit(self):
+        self.root.destroy()
 
     def check_config(self):
         if not os.path.exists(self.config_file_path):
             XConfig()
-
         else:
             pass
 
-    def auth_pass(self):
-        if self.passwd.get() == self.stored_password:
+    @staticmethod
+    def verify_password(password, hashed_password):
+        return bcrypt.checkpw(password.encode(), hashed_password.encode())
 
+    def auth_pass(self):
+        if self.verify_password(self.passwd.get(), self.stored_password):
             self.root.withdraw()
             XCryptUI()
         else:
-            exit()
+            messagebox.showerror(title="Incorrect Password",
+                                 message="Please re-enter the correct password")
+            self.passwd_entry.delete(0, tk.END)
+            return
+
+    def fetch_config(self, section, key):
+        config = configparser.ConfigParser()
+        config.read(self.config_file_path)
+        return config.get(section, key)
 
 
 class XCryptUI:
@@ -135,7 +181,11 @@ class XCryptUI:
         # create components
         self.create_components()
 
+        self.root.protocol("WM_DELETE_WINDOW", self.exit)
         self.root.mainloop()
+
+    def exit(self):
+        self.root.destroy()
 
     def create_components(self):
         self.title = tk.Label(self.root, text='XCrypt File Safe',
