@@ -3,3 +3,13 @@ data/**
 test.py
 ui_training.py
 tests/
+main.py
+xcrypt.py
+xcrypt_ui.py
+model/data_model.py
+model/model.py
+controller/main_controller.py
+controller/controller.py
+view/view.py
+view/main_frame.py
+app.py
