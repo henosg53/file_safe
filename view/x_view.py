@@ -71,7 +71,7 @@ class NavBar(tk.Frame):
 class XCryptUI(tk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
-        # authenticate user
+        # # authenticate user
         # XAuth()
         self.parent = parent
         self.controller = None
