@@ -1,6 +1,8 @@
 import json
 import os
-from xcrypt import XCrypt
+import stat
+import datetime
+from junk.xcrypt import XCrypt
 import tkinter as tk
 from tkinter import messagebox, filedialog, Tk, ttk
 
@@ -72,10 +74,10 @@ class NavBar(tk.Frame):
 
         self.menu_bar = tk.Menu(self)
         file_menu = tk.Menu(self.menu_bar, tearoff=0)
-        file_menu.add_command(label="New", command=self.do_nothing)
-        file_menu.add_command(label="Open", command=self.do_nothing)
-        file_menu.add_command(label="Save", command=self.do_nothing)
-        file_menu.add_command(label="Save Us", command=self.do_nothing)
+        file_menu.add_command(label="XCrypt Safe", command=self.home)
+        file_menu.add_command(label="New Window", command=self.do_nothing)
+        file_menu.add_command(label="Create Folder", command=self.do_nothing)
+        file_menu.add_command(label="Properties", command=self.do_nothing)
 
         file_menu.add_separator()
 
@@ -93,20 +95,27 @@ class NavBar(tk.Frame):
         edit_menu.add_command(label="Delete", command=self.do_nothing)
         edit_menu.add_command(label="Select All", command=self.do_nothing)
 
-        self.menu_bar.add_cascade(label="View", menu=edit_menu)
+        self.menu_bar.add_cascade(label="Edit", menu=edit_menu)
+
+        view_menu = tk.Menu(self.menu_bar, tearoff=0)
+        view_menu.add_command(label="Icon View", command=self.do_nothing)
+        view_menu.add_command(label="List View", command=self.do_nothing)
+        view_menu.add_command(label="Compact View", command=self.do_nothing)
+
+        self.menu_bar.add_cascade(label="View", menu=view_menu)
+
+        go_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.menu_bar.add_cascade(label="Go", menu=go_menu)
+
+        bookmarks_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.menu_bar.add_cascade(label="Bookmarks", menu=bookmarks_menu)
 
         help_menu = tk.Menu(self.menu_bar, tearoff=0)
-        help_menu.add_command(label="Index", command=self.do_nothing)
+        help_menu.add_command(label="Appearance", command=self.do_nothing)
         help_menu.add_command(label="About", command=self.about)
-        help_menu.add_command(label="Learn Features", command=self.do_nothing)
+        help_menu.add_command(label="Configuration", command=self.configuration)
 
         self.menu_bar.add_cascade(label="Help", menu=help_menu)
-
-        settings_menu = tk.Menu(self.menu_bar, tearoff=0)
-        settings_menu.add_command(label="Appearance", command=self.do_nothing)
-        settings_menu.add_command(label="Configuration", command=self.configuration)
-
-        self.menu_bar.add_cascade(label="Settings", menu=settings_menu)
 
     def get_menu_bar(self):
         return self.menu_bar
@@ -125,6 +134,9 @@ class NavBar(tk.Frame):
 
     def about(self):
         self.controller.about_page()
+
+    def home(self):
+        self.controller.home_page()
 
 
 class XCryptUI(tk.Frame):
@@ -181,11 +193,12 @@ class XCryptUI(tk.Frame):
         self.files_scrollbar = tk.Scrollbar(self.files_frame)
         self.files_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-        columns = ('size', 'modified')
+        columns = ('size', 'modified', 'permissions')
         self.file_treeview = ttk.Treeview(self.files_frame, columns=columns)
         self.file_treeview.heading("#0", text="Name", anchor=tk.W)
         self.file_treeview.heading("size", text="Size", anchor=tk.W)
         self.file_treeview.heading("modified", text="Last Modified", anchor=tk.W)
+        self.file_treeview.heading("permissions", text="Permissions", anchor=tk.W)
 
         self.file_treeview.column("#0", width=300)
         self.file_treeview.column("size", width=100)
@@ -194,17 +207,6 @@ class XCryptUI(tk.Frame):
         self.file_treeview.configure(yscrollcommand=self.files_scrollbar.set)
 
         self.file_treeview.bind('<<TreeviewSelect>>', self.item_selected)
-
-        self.file_listbox = tk.Listbox(self.files_frame,
-                                       bg="gray",
-                                       font="forte",
-                                       selectbackground="black",
-                                       selectforeground="white",
-                                       yscrollcommand=self.files_scrollbar.set,
-                                       # cursor="circle",
-                                       width=50,
-                                       height=10)
-        # self.file_listbox.pack(side=tk.LEFT, fill=tk.BOTH)
 
         self.files_scrollbar.config(command=self.file_treeview.yview)
 
@@ -225,6 +227,27 @@ class XCryptUI(tk.Frame):
                                        activeforeground="white",
                                        command=self.delete_file)
         self.delete_button.pack(padx=(5, 5), side=tk.RIGHT, fill=tk.BOTH)
+
+    def file_property(self, filename):
+        file_path = os.path.join(self.encrypted_files_path, filename)
+        file_stat = os.stat(file_path)
+        file_size = file_stat.st_size
+        creation_time = file_stat.st_ctime
+        modification_time = file_stat.st_mtime
+        access_time = file_stat.st_atime
+        permissions = file_stat.st_mode
+        is_directory = stat.S_ISDIR(permissions)
+
+        details = {
+            'filename': filename,
+            'size': file_size,
+            'creation_time': datetime.datetime.fromtimestamp(creation_time),
+            'modification_time': datetime.datetime.fromtimestamp(modification_time),
+            'access_time': datetime.datetime.fromtimestamp(access_time),
+            'permissions': stat.filemode(permissions),
+            'is_directory': is_directory
+        }
+        return details
 
     def create_secure_directory(self, directory_path):
         if not os.path.exists(directory_path):
@@ -253,12 +276,15 @@ class XCryptUI(tk.Frame):
     # populate listbox
     def populate_file_listbox(self):
         self.file_treeview.delete(*self.file_treeview.get_children())
-        # self.file_listbox.delete(0, tk.END)
         for filename in os.listdir(self.encrypted_files_path):
             file_path = os.path.join(self.encrypted_files_path, filename)
+            details = self.file_property(file_path)
             if os.path.isfile(file_path):
-                # self.file_listbox.insert(tk.END, filename)
-                self.file_treeview.insert("", tk.END, text=filename, values=("10 KB", "2023-12-30 10:00 AM"))
+                self.file_treeview.insert("", tk.END,
+                                          text=filename,
+                                          values=(details['size'],
+                                                  details['modification_time'],
+                                                  details['permissions']))
 
     def encrypt(self):
         self.controller.encrypt_file()
@@ -278,15 +304,14 @@ class XView(tk.Frame):
         super().__init__(parent)
 
         self.parent = parent
+        self.controller = None
         self.navbar = None
         self.navbar_controller = None
-        self.main_view = None
-        self.main_view_controller = None
-        self.main_view_model = None
-        self.config_view = None
-        self.config_view_controller = None
-        self.config_view_model = None
-        self.controller = None
+
+        self.main_view, self.main_view_controller, self.main_view_model = None, None, None
+        self.home_view, self.home_view_controller, self.home_view_model = None, None, None
+        self.config_view, self.config_view_controller, self.config_view_model = None, None, None
+        self.about_view, self.about_view_controller, self.about_view_model = None, None, None
 
         self.create_components()
 
@@ -297,10 +322,12 @@ class XView(tk.Frame):
 
         self.parent.config(menu=self.navbar.get_menu_bar())
 
-        self.main_view = XCryptUI(self)
-        self.main_view_model = XCrypt()
-        self.main_view_controller = XController(model=self.main_view_model, view=self.main_view)
-        self.set_component_controller(component=self.main_view, controller=self.main_view_controller)
+        self.home_view = XCryptUI(self)
+        self.home_view_model = XCrypt()
+        self.home_view_controller = XController(model=self.home_view_model, view=self.home_view)
+
+        self.main_view = self.home_view
+        self.set_component_controller(component=self.home_view, controller=self.home_view_controller)
 
         self.main_view.grid()
 
@@ -313,3 +340,14 @@ class XView(tk.Frame):
     @staticmethod
     def set_component_controller(component, controller):
         component.set_controller(controller=controller)
+
+    def change_main_view(self, view, controller=None):
+        if self.main_view is not None:
+            self.main_view.grid_remove()
+        self.main_view = view
+
+        if self.main_view is not None:
+            self.main_view.grid()
+
+        if controller is not None:
+            self.set_component_controller(self.main_view, controller=controller)

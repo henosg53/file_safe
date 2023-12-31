@@ -1,5 +1,5 @@
 import tkinter as tk
-from controller.main_controller import SideBarController
+from junk.main_controller import SideBarController
 
 
 class Sidebar(tk.Frame):

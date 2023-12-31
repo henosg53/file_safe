@@ -1,34 +1,32 @@
-# from xcrypt_ui import XAuth
-#
-#
-# if __name__ == '__main__':
-#     XAuth()
 import tkinter as tk
-from model.model import Model
-from view.view import View
-from controller.controller import Controller
+from view.x_view import XView
+from controller.x_controller import XController
+from model.xcrypt import XCrypt
 
 
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
 
-        self.title('Tkinter MVC Demo')
+        self.title("XCrypt")
+        self.screen_height = 500
+        self.screen_width = 750
+        self.geometry(f"{self.screen_width}x{self.screen_height}")
 
-        # create a model
-        model = Model('hello@pythontutorial.net')
+        self.configure(bg="darkgray",
+                       padx=5, pady=5,
+                       height=self.screen_height, width=self.screen_width)
 
-        # create a view and place it on the root window
-        view = View(self)
-        view.grid(row=0, column=0, padx=10, pady=10)
+        model = XCrypt
+        view = XView(self)
+        controller = XController(model=model, view=view)
 
-        # create a controller
-        controller = Controller(model, view)
+        view.set_controller(controller=controller)
+        view.pack()
 
-        # set the controller to view
-        view.set_controller(controller)
+        self.protocol("WM_DELETE_WINDOW", self.destroy)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app = App()
     app.mainloop()

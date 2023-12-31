@@ -4,10 +4,15 @@ import bcrypt
 import os
 
 
-class ConfigController:
+class Controller:
     def __init__(self, model, view):
         self.model = model
         self.view = view
+
+
+class ConfigController(Controller):
+    def __init__(self, model, view):
+        super().__init__(model, view)
 
     def update_config(self):
         def encrypt_password(passwd):
@@ -43,27 +48,29 @@ class ConfigController:
             self.view.message_box.showinfo("Success", "Configuration saved!")
 
 
-class NavBarController:
+class NavBarController(Controller):
     def __init__(self, model, view):
-        self.model = model
-        self.view = view
+        super().__init__(model, view)
 
     def configuration_page(self):
-        self.view.parent.main_view.remove_grid()
-        self.view.parent.config_view.grid()
         view_controller = ConfigController(model="", view=self.view.parent.config_view)
-        self.view.parent.config_view.set_controller(controller=view_controller)
-        print("Configurations page")
+        self.view.parent.change_main_view(view=self.view.parent.config_view,
+                                          controller=view_controller)
+
+        print("Switched to config page")
 
     def about_page(self):
-        self.view.parent.main_view.remove_grid()
-        self.view.parent.about_view.grid()
+        self.view.parent.change_main_view(view=self.view.parent.about_view)
+        print("Switched to about page")
+
+    def home_page(self):
+        self.view.parent.change_main_view(view=self.view.parent.home_view)
+        print("Switched to Home page")
 
 
-class XController:
+class XController(Controller):
     def __init__(self, model, view):
-        self.model = model
-        self.view = view
+        super().__init__(model, view)
 
     def encrypt_file(self):
         file = self.view.select_file()
