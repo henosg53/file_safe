@@ -1,7 +1,7 @@
 import tkinter as tk
 from view.x_view import XView
 from controller.x_controller import XController
-from model.xcrypt import XCrypt
+from model.xcrypt_model import XCrypt
 
 
 class App(tk.Tk):

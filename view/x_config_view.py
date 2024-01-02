@@ -5,6 +5,50 @@ import bcrypt
 import os
 
 
+class ConfigView(tk.Frame):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.parent = parent
+        self.controller = None
+
+        self.username_var = tk.StringVar()
+        self.password_var = tk.StringVar()
+        self.username, self.password, self.update_btn = None, None, None
+        self.message_box = messagebox
+        self.create_components()
+
+    def create_components(self):
+        label = tk.Label(self, text="Configurations", font="forte 20 bold")
+        label.pack()
+
+        username_label = tk.Label(self, text="Username")
+        username_label.pack()
+        self.username = tk.Entry(self, textvariable=self.username_var)
+        self.username.pack()
+
+        password_label = tk.Label(self, text="Password")
+        password_label.pack()
+        self.password = tk.Entry(self, textvariable=self.password_var, show='*')
+        self.password.pack()
+
+        self.update_btn = tk.Button(self, text="Update Change", bg="blue", fg="white",
+                                    command=self.update_conf)
+        self.update_btn.pack()
+
+    def update_conf(self):
+        self.controller.update_config()
+
+    def set_controller(self, controller):
+        self.controller = controller
+
+    @staticmethod
+    def is_field_empty(field):
+        if field is None or field == "":
+            return True
+        return False
+
+
 # from view.x_auth import XAuth
 def encrypt_password(password):
     salt = bcrypt.gensalt()
@@ -77,7 +121,7 @@ class XConfig:
             messagebox.showinfo("Success", "Configuration saved!")
 
             self.root.withdraw()
-            XAuth()
+            # XAuth()
 
     def exit(self):
         self.root.destroy()
