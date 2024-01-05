@@ -1,10 +1,11 @@
 import tkinter as tk
+import customtkinter as ctk
 import os, datetime, stat, json
 from model.xcrypt_model import XCrypt
 from tkinter import filedialog, ttk, messagebox
 
 
-class XCryptView(tk.Frame):
+class XCryptView(ctk.CTkFrame):
     def __init__(self, parent):
         super().__init__(parent)
         # # authenticate user

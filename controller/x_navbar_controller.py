@@ -20,3 +20,6 @@ class NavBarController(Controller):
     def home_page(self):
         self.view.parent.change_main_view(view=self.view.parent.home_view)
         print("Switched to Home page")
+
+    def xplorer_page(self):
+        self.view.parent.change_main_view(view=self.view.parent.xplorer_view)

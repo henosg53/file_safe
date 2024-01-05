@@ -1,5 +1,5 @@
 import tkinter as tk
-
+import customtkinter as ctk
 from controller.x_controller import XController
 from controller.x_navbar_controller import NavBarController
 from model.xcrypt_model import XCrypt
@@ -7,9 +7,10 @@ from view.x_crypt_view import XCryptView
 from view.x_navbar_view import NavBar
 from view.x_about_view import AboutView
 from view.x_config_view import ConfigView
+from view.x_plorer import XPlorerView
 
 
-class XView(tk.Frame):
+class XView(ctk.CTkFrame):
     def __init__(self, parent):
         super().__init__(parent)
 
@@ -22,6 +23,7 @@ class XView(tk.Frame):
         self.home_view, self.home_view_controller, self.home_view_model = None, None, None
         self.config_view, self.config_view_controller, self.config_view_model = None, None, None
         self.about_view, self.about_view_controller, self.about_view_model = None, None, None
+        self.xplorer_view, self.xplorer_view_controller, self.xplorer_view_model = None, None, None
 
         self.create_components()
 
@@ -36,13 +38,14 @@ class XView(tk.Frame):
         self.home_view_model = XCrypt()
         self.home_view_controller = XController(model=self.home_view_model, view=self.home_view)
 
-        self.main_view = self.home_view
+        self.config_view = ConfigView(self)
+        self.about_view = AboutView(self)
+        self.xplorer_view = XPlorerView(self)
+
+        self.main_view = self.xplorer_view
         self.set_component_controller(component=self.home_view, controller=self.home_view_controller)
 
         self.main_view.grid()
-
-        self.config_view = ConfigView(self)
-        self.about_view = AboutView(self)
 
     def set_controller(self, controller):
         self.controller = controller

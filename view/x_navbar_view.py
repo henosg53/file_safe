@@ -1,7 +1,8 @@
 import tkinter as tk
+from view.view import View
 
 
-class NavBar(tk.Frame):
+class NavBar(View):
     def __init__(self, parent):
         super().__init__(parent)
         self.parent = parent
@@ -10,7 +11,7 @@ class NavBar(tk.Frame):
         self.menu_bar = tk.Menu(self)
         file_menu = tk.Menu(self.menu_bar, tearoff=0)
         file_menu.add_command(label="XCrypt Safe", command=self.home)
-        file_menu.add_command(label="New Window", command=self.do_nothing)
+        file_menu.add_command(label="New Window", command=self.xplorer)
         file_menu.add_command(label="Create Folder", command=self.do_nothing)
         file_menu.add_command(label="Properties", command=self.do_nothing)
 
@@ -72,3 +73,6 @@ class NavBar(tk.Frame):
 
     def home(self):
         self.controller.home_page()
+
+    def xplorer(self):
+        self.controller.xplorer_page()
