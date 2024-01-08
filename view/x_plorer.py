@@ -1,18 +1,21 @@
 import platform
+import subprocess
 
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, filedialog, messagebox
 import os
 import stat
 import datetime
 import customtkinter as ctk
 
 from model.x_frame import XFrame
+from model.xcrypt_model import XCrypt
 
 
 class XSidebar(XFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
+        self.parent = master
         self.sidebar_content = None
         self.configure(width=200, fg_color="black", corner_radius=0)
         # self.pack(fill=tk.Y, expand=True)
@@ -37,7 +40,7 @@ class XSidebar(XFrame):
                                                       corner_radius=0)
         self.sidebar_content.pack(fill=tk.BOTH, expand=True)
 
-        places_label = ctk.CTkLabel(self.sidebar_content, text="Places", font=ctk.CTkFont(size=15, weight="bold"))
+        places_label = ctk.CTkLabel(self.sidebar_content, text="Bookmarks", font=ctk.CTkFont(size=15, weight="bold"))
         places_label.pack(padx=0, pady=(5, 5))
 
         for index, place in enumerate(self.places):
@@ -80,9 +83,19 @@ class XSidebar(XFrame):
             # Pack the directory item component
             networks_frame.pack(fill=tk.X, padx=5, pady=5)
 
-    @staticmethod
-    def left_clicked(folder):
-        print(f"{folder} left clicked!")
+    # @staticmethod
+    def left_clicked(self, folder):
+        if folder == 'Home':
+            self.parent.go_home()
+        elif folder == 'Computer':
+            print(f"{folder} left clicked!")
+        else:
+            # self.parent.curr_dir = ""
+            path = os.path.join(self.parent.home_path, folder)
+            self.parent.clean_file_list()
+            self.parent.populate_file_list_frame(path)
+            self.parent.curr_dir = path
+            print(f"{folder} left clicked!")
 
     @staticmethod
     def right_clicked(folder):
@@ -121,6 +134,19 @@ class XScrollableFrame(ctk.CTkFrame):
         pass
 
 
+class XItemProperties:
+    def __init__(self, master, file_details) -> None:
+        self.parent = master
+        self.file_details = file_details
+        properties_toplevel = ctk.CTkToplevel(self.parent, height=500)
+        properties_toplevel.title("Properties")
+        properties_toplevel.geometry(f"{500}x{300}")
+
+        for i, (key, value) in enumerate(self.file_details.items()):
+            label = ctk.CTkLabel(properties_toplevel, text=f"{key}: {value}")
+            label.pack(anchor=tk.W)
+
+
 class XPlorerView(ctk.CTkFrame):
     def __init__(self, parent, **kwargs) -> None:
         super().__init__(parent, **kwargs)
@@ -136,18 +162,23 @@ class XPlorerView(ctk.CTkFrame):
          self.go_up_btn,
          self.go_forward_btn,
          self.go_back_btn,
+         self.go_home_btn,
          self.path_nav_frame,
          self.main_container,
          self.sidebar_content,
          self.logo_label,
          self.sidebar_frame,
-         self.option_menu) = None, None, None, None, None, None, None, None, None, None, None,
+         self.option_menu) = None, None, None, None, None, None, None, None, None, None, None, None,
 
         self.home_path = self.get_os_home_path()
 
         self.file_list = []
         self.curr_dir = self.home_path
         self.items_ref = []
+        self.selected_item = None
+        self.file_properties_values = ['Open', 'Open with', 'Copy', 'Cut', 'Delete', 'Add to safe', 'Properties']
+        self.folder_properties_values = ['Open', 'Open with', 'Copy', 'Cut', 'Delete',
+                                         'Add Folder to safe', 'Properties']
 
         self.create_components()
 
@@ -177,6 +208,9 @@ class XPlorerView(ctk.CTkFrame):
         self.go_up_btn = ctk.CTkButton(self.path_nav_frame, width=10, text="^", command=self.go_up)
         self.go_up_btn.grid(row=0, column=2, padx=(0, 0), pady=(0, 0))
 
+        self.go_home_btn = ctk.CTkButton(self.path_nav_frame, width=10, text="Home", command=self.go_home)
+        self.go_home_btn.grid(row=0, column=2, padx=(0, 0), pady=(0, 0))
+
         # path text entry
         self.path_text_box = ctk.CTkEntry(self.path_nav_frame, textvariable=tk.StringVar(value=self.curr_dir),
                                           width=500)
@@ -198,8 +232,12 @@ class XPlorerView(ctk.CTkFrame):
             self.clean_file_list()
             self.populate_file_list_frame(self.curr_dir)
 
-    def populate_file_list(self, path=None):
+    def go_home(self):
+        self.curr_dir = self.home_path
+        self.clean_file_list()
+        self.populate_file_list_frame(self.curr_dir)
 
+    def populate_file_list(self, path=None):
         if path is None:
             path = self.curr_dir
 
@@ -227,8 +265,10 @@ class XPlorerView(ctk.CTkFrame):
 
         for index, item in enumerate(self.file_list):
             devices_frame = ctk.CTkFrame(self.files_list_frame.scrollable_frame)
-            item_label = ctk.CTkLabel(devices_frame, text=item)
-            item_label.bind("<Button-1>", lambda event, x_item=item: self.open_dir(x_item, event))
+            devices_frame.configure(bg_color="white")
+            item_label = ctk.CTkLabel(devices_frame, text=f" {item} ")
+            item_label.bind("<Button-1>", lambda event, x_item=item: self.select_item(x_item, event))
+            item_label.bind("<Double-Button-1>", lambda event, x_item=item: self.open(x_item, event))
             item_label.bind("<Button-3>", lambda event, x_item=item: self.show_options(x_item, event))
             item_label.pack(side=tk.LEFT)
 
@@ -239,38 +279,118 @@ class XPlorerView(ctk.CTkFrame):
     def show_options(self, item, event):
         print(self.curr_dir)
         print(f"{item} right clicked, event: {event}")
-        op_var = tk.StringVar(value="op 2")
-        values = ['op 1', 'op 2']
-        self.option_menu = tk.Menu(self.files_list_frame, tearoff=0)
+
+        if self.is_directory(os.path.join(self.curr_dir, item)):
+            values = self.folder_properties_values
+        else:
+            values = self.file_properties_values
+
+        self.option_menu = tk.Menu(self.files_list_frame, bg="black", fg="white", tearoff=0)
         self.option_menu.delete(0, tk.END)
 
-        def option_selected(x_item, option):
-            properties_toplevel = tk.Toplevel(self.master, height=500)
-            properties_toplevel.title("Properties")
-            properties_toplevel.geometry(f"{500}x{300}")
-            details = self.file_details(self.curr_dir+f"/{item}")
-
-            for i, (key, value) in enumerate(details.items()):
-                label = tk.Label(properties_toplevel, text=f"{key}: {value}")
-                label.pack(anchor=tk.W)
-
-            print(f"item: {x_item}, option: {option}")
-
         for x in values:
-            self.option_menu.add_command(label=f"{x} for {item}", command=lambda: option_selected(item, x))
+            self.option_menu.add_command(label=f" {x} ",
+                                         command=lambda c=x:
+                                         self.option_selected(x_item=item, action=c))
 
         self.option_menu.tk_popup(event.x_root, event.y_root)
 
-    def open_dir(self, item, event):
+    def option_selected(self, x_item, action):
+        item_path = os.path.join(self.curr_dir, x_item)
+        if action == "Open":
+            if os.path.isdir(item_path):
+                self.open_dir(x_item)
+            else:
+                self.open_file(x_item)
+                print(f"open file {x_item}")
+        elif action == "Open with":
+            if os.path.isdir(item_path):
+                self.open_dir(x_item)
+            else:
+                self.open_file_with(x_item)
+            print(f"Open {x_item} with...")
+        elif action == "Copy":
+            print(f"copy {x_item}")
+        elif action == "Cut":
+            print(f"Delete {x_item}")
+        elif action == "delete":
+            print(f"delete {x_item}")
+        elif action == 'Add to safe':
+            self.add_to_xcrypt_safe(x_item)
+        elif action == 'Properties':
+            details = self.file_details(os.path.join(self.curr_dir, x_item))
+            XItemProperties(self.master, file_details=details)
+        else:
+            print(f"item: {x_item}, option: {action}")
+
+    def select_item(self, item, event=None):
+
+        # Unselect the previously selected item
+        if self.selected_item is not None:
+            for frame in self.items_ref:
+                frame.configure(bg_color="white")
+                frame.update()
+            self.selected_item = None
+
+        # Set the background color of the selected item to blue
+        selected_frame = event.widget.master
+        selected_frame.configure(bg_color="blue")
+        selected_frame.update_idletasks()
+
+        # Set the selected item
+        self.selected_item = item
+        print(self.selected_item)
+
+    def open_dir(self, item, event=None):
         print(f"{item} left clicked, event: {event}")
 
         self.curr_dir = os.path.join(self.curr_dir, item)
         print(self.curr_dir)
         self.clean_file_list()
 
-        print(f"items_list: {self.items_ref}")
-
+        # print(f"items_list: {self.items_ref}")
         self.populate_file_list_frame(path=self.curr_dir)
+
+    def open_file(self, item, event=None):
+        file = os.path.join(self.curr_dir, item)
+        if file:
+            subprocess.run(['xdg-open', file])
+
+    def open(self, item, event=None):
+        item_path = os.path.join(self.curr_dir, item)
+        if self.is_directory(item_path):
+            self.open_dir(item)
+        else:
+            self.open_file(item)
+
+    def open_file_with(self, item, event=None):
+        initial_dir = ''
+        file_path = os.path.join(self.curr_dir, item)
+        system = platform.system()
+        if system == 'Windows':
+            initial_dir = 'C:/Program Files'
+        elif system == 'Darwin':
+            initial_dir = '/Applications'
+        elif system == 'Linux':
+            initial_dir = '/usr/bin'
+        if file_path:
+            app_path = filedialog.askopenfilename(initialdir=initial_dir)
+            if app_path:
+                subprocess.run([app_path, file_path])  # Open the file with the chosen application
+
+    def add_to_xcrypt_safe(self, item, event=None):
+        result = messagebox.askyesno("Confirm", f"Do you want to add {item} to safe?")
+        if result:
+            file = os.path.join(self.curr_dir, item)
+            x = XCrypt()
+            try:
+                x.encrypt_file(file_path=file)
+                messagebox.showinfo("XCrypted", "File is in secure safe")
+            except IOError as err:
+                print(err)
+
+        else:
+            return
 
     @staticmethod
     def get_os_home_path():
@@ -294,7 +414,7 @@ class XPlorerView(ctk.CTkFrame):
         permissions = file_stat.st_mode
         is_directory = stat.S_ISDIR(permissions)
 
-        details = {
+        mime = {
             'filename': filename,
             'size': file_size,
             'creation_time': datetime.datetime.fromtimestamp(creation_time),
@@ -303,6 +423,8 @@ class XPlorerView(ctk.CTkFrame):
             'permissions': permissions,
             'is_directory': is_directory
         }
-        return details
+        return mime
 
-
+    def is_directory(self, filename):
+        mime = self.file_details(filename=filename)
+        return mime['is_directory']
